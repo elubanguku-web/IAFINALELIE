@@ -74,14 +74,54 @@ PROFIL : Compte 10 000€ | Risque 1% = 100€ | Lot 0.01 = 1pip = 1€ | Max 3 
 
 KILL ZONES (UTC+2) : London 10h-12h | NY 15h30-17h30 | Dead Zone 12h-15h30 | Pre-London 07h-09h
 
-COULEURS OB KASPER :
-🟢 Vert=M30 | ⬜ Gris=H1 | ⬛ Noir=H4 | 🩷 Rose=M45 | 🔵 Bleu=M15 | 🟣 Mauve=M5 (déclencheur) | 🔴 Rouge=M1
+=== LÉGENDE GRAPHIQUE EXACTE (NE JAMAIS INVENTER) ===
 
-RÈGLES STRICTES :
+OB (Order Blocks) — rectangles avec CONTOUR coloré :
+- Contour MAUVE = OB M5 → déclencheur primaire obligatoire
+- Contour VERT = OB M30 → confluence bonus
+- Contour GRIS = OB H1
+- Contour NOIR = OB H4 → institutionnel
+- NE PAS mentionner M1, M15, M45 — trop d'erreurs
+
+FVG (Fair Value Gaps) — rectangles PLEINS :
+- Rectangle entièrement BLEU = FVG haussier
+- Rectangle entièrement ROUGE = FVG baissier
+
+LIQUIDITÉS :
+- Lignes NOIRES horizontales avec $$$ = niveaux de liquidité
+- Lignes BLEUES avec €€€ = trendline haussière
+- Lignes ORANGES avec €€€ = trendline baissière
+
+ASIAN SESSION :
+- Grand rectangle GRIS FONCÉ / NOIR = session asiatique
+- Haut du rectangle = résistance / liquidité haute
+- Bas du rectangle = support / liquidité basse
+
+POC :
+- Ligne fine JAUNE continue horizontale = Point of Control
+
+ChoCH :
+- Ligne discontinue ORANGE + texte "ChoCH" orange = ChoCH baissier
+- Ligne discontinue BLEUE + texte "ChoCH" bleu = ChoCH haussier
+
+OTE FIBONACCI :
+- Zone rouge sur le graphique avec niveaux à gauche = zone OTE (0.618-0.786)
+
+SETUP DE TRADE (si visible sur le chart) :
+- Rectangle BLEU CYAN plein = zone de TP (profit)
+- Rectangle ORANGE plein = zone de SL (perte)
+- Ligne ROUGE horizontale = point d'entrée
+→ Si entrée < TP = LONG | Si entrée > TP = SHORT
+→ Calculer RR = distance(entrée→TP) / distance(entrée→SL)
+→ Valider ou invalider le setup selon les règles SMC
+
+LIQUIDITY SWEEP : détecter toi-même les sweeps (dépassement bref d'un niveau $$$ puis retour)
+
+=== RÈGLES STRICTES ===
 - OB M5 Mauve = déclencheur primaire | SL long = low OB M5 -4 pips | SL short = high OB M5 +4 pips
 - Zone épuisée (2+ retests) = -15pts | SafeHaven XAU↑/EUR↓ = -15pts
-- Ne JAMAIS inventer des confirmations non visibles sur le chart
-- OTE = zone 0.618-0.786 Fibonacci sur le move
+- Ne JAMAIS inventer des éléments non visibles sur le chart
+- OTE = zone rouge Fibonacci 0.618-0.786
 
 SCORING /215 :
 Technique /140 : FVG+10, IFVG+10, EQL+15, OTE+15, DoubleOTE+25, PremDisc+10, PDH/PDL+10, AsiaRange+10, LiqSweep+15, H4+10, SilverBullet+10, Judas+10, ChoCH+10, POC+10, BougieOB+10, DivRSI+10, Overflow+10
@@ -91,7 +131,7 @@ Pénalités : SafeHaven-15, AnnonceProche-10, MacroOppose-10, ZoneEpuisee2x-15
 SEUILS : <41 SKIP | 41-70 demi-taille | 71-120 normal | 120-170 fort | 170+ parfait
 
 FORMAT TELEGRAM (mobile, concis, max 20 lignes) :
-Biais → OB identifiés (couleur+TF) → Score /215 → GO/SKIP → Entrée/SL/TP si valide → Confiance /10
+Biais → OB (contour+TF) → FVG → ChoCH → Liquidités → POC → OTE → Setup visible → Score /215 → GO/SKIP → Entrée/SL/TP/RR → Confiance /10
 STRICT : ne pas gonfler le score. Si pas de setup = SKIP clair."""
 
 # ══════════════════════════════════════════════════════
@@ -119,17 +159,44 @@ def is_duplicate(title: str) -> bool:
 # FILTRES NEWS
 # ══════════════════════════════════════════════════════
 CRITICAL = [
-    "iran","hormuz","ceasefire","nuclear","fed","fomc","powell",
-    "rate decision","rate hike","rate cut","ecb","bce","lagarde",
-    "cpi","inflation","nfp","payroll","gdp","gold","xau","dxy",
-    "war","strike","attack","trump","oil","israel","hezbollah",
-    "lebanon","beige book","ppi","jobs report","treasury yield",
-    "federal reserve","interest rate","monetary policy",
+    # Banques centrales
+    "fed","fomc","powell","federal reserve","rate decision","rate hike","rate cut",
+    "ecb","bce","lagarde","interest rate","monetary policy","quantitative",
+    "hawkish","dovish","pivot","taper",
+    # Macro US
+    "cpi","inflation","nfp","payroll","gdp","ppi","pce","jobless",
+    "jobs report","unemployment","beige book","ism","retail sales",
+    "consumer price","producer price","core inflation","jobs data",
+    # Marché or/dollar
+    "gold","xau","dxy","dollar index","safe haven","precious metal",
+    # Géopolitique
+    "iran","hormuz","strait","nuclear","war","strike","attack","missile",
+    "explosion","escalat","ceasefire","conflict","invasion","bombing",
+    "israel","hezbollah","lebanon","ukraine","russia","north korea",
+    "taiwan","china","persian gulf","middle east","nato",
+    # Pétrole
+    "oil","crude","brent","opec","wti","energy prices",
+    # Marchés
+    "treasury yield","us10y","bond yield","market crash","recession",
+    "s&p 500","dow jones","nasdaq","vix","risk off","risk on",
+    # Trump/politique US
+    "trump","tariff","trade war","sanction","export ban","debt ceiling",
 ]
 IMPORTANT = [
-    "unemployment","manufacturing","pmi","dollar","crude",
-    "s&p","nasdaq","china","russia","opec","recession",
-    "yield","bond","sanctions","geopolit",
+    # Données économiques secondaires
+    "manufacturing","pmi","housing","building permit","trade balance",
+    "current account","budget deficit","industrial production",
+    # Marchés
+    "dollar","euro","sterling","yen","franc","emerging market",
+    "stock market","equity","commodity","futures","options",
+    # Banques/finance
+    "bank","banking","credit","liquidity","default","bankruptcy",
+    "imf","world bank","bis","g7","g20","davos",
+    # Géopolitique secondaire
+    "geopolit","diplomat","summit","sanctions","embargo","alliance",
+    "opec","cartel","supply cut","production cut",
+    # Divers
+    "inflation expectation","growth","slowdown","contraction","expansion",
 ]
 
 def news_score(title: str, summary: str = "") -> int:
@@ -362,9 +429,9 @@ async def claude_call(session: aiohttp.ClientSession, messages: list, max_tokens
             if "content" in data and data["content"]:
                 return data["content"][0]["text"]
             elif "error" in data:
-                return f"❌ Claude API erreur : {data['error'].get('message', str(data['error']))}"
+                return f"❌ Claude API erreur : {data['error'].get('message', str(data))}"
             else:
-                return f"❌ Claude réponse inattendue : {str(data)[:300]}"
+                return f"❌ Claude API réponse inattendue : {str(data)[:200]}"
     except Exception as e:
         return f"❌ Erreur Claude API : {e}"
 
@@ -590,7 +657,7 @@ async def alert_price(bot: Bot):
     lines = [
         f"⚡️ <b>ALERTE PRIX XAU/USD</b>",
         f"{col} {icon} {change_pct:+.2f}% — {change_pips:.0f} pips",
-        f"💰 Prix : <b>${xau:,.2f}</b>," if xau else "💰 Prix : N/A",
+        f"💰 Prix : <b>${xau:,.2f}</b>",
         f"💶 EUR/USD : {state['eurusd'] or 'N/A'}",
         f"💵 DXY : {state['dxy'] or 'N/A'}",
         f"⏰ {now.strftime('%H:%M')} — {get_kz(now)}",
@@ -621,9 +688,9 @@ async def alert_news(bot: Bot, session: aiohttp.ClientSession):
         summary = n.get("summary","")
         source  = n.get("source","")
         sc = news_score(title, summary)
-        if sc < 2: continue
+        if sc < 1: continue
 
-        label  = {3:"🔴 <b>CRITIQUE</b>", 2:"🟠 <b>IMPORTANT</b>"}.get(sc,"")
+        label  = {3:"🔴 <b>CRITIQUE</b>", 2:"🟠 <b>IMPORTANT</b>", 1:"🔵 <b>À NOTER</b>"}.get(sc,"")
         now    = datetime.now(BRUSSELS)
         impact = gold_impact(title + " " + summary)
 
@@ -755,7 +822,7 @@ async def cmd_prix(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         f"📊 <b>MARCHÉS EN DIRECT</b>\n\n"
-        f"🥇 XAU/USD : <b>${xau:,.2f}</b>\n" if xau else "❌ XAU/USD : N/A\n"
+        f"🥇 XAU/USD : <b>${xau:,.2f}</b>\n"
         f"💶 EUR/USD : {eur}\n"
         f"💵 DXY : {state['dxy']}\n"
         f"📈 S&P500 : {state['sp500']}\n"
