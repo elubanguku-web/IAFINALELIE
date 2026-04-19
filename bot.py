@@ -1022,9 +1022,10 @@ async def handle_photo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     )
     async with aiohttp.ClientSession() as s:
         result = await analyse_chart(s, b64, ctx_str)
+    # Strip markdown and send without parse_mode to avoid HTML errors
+    result_clean = result.replace("**", "").replace("__", "")
     await update.message.reply_text(
-        f"📊 <b>ANALYSE SMC</b>\n\n{result}",
-        parse_mode=ParseMode.HTML
+        f"📊 ANALYSE SMC\n\n{result_clean}"
     )
 
 # ══════════════════════════════════════════════════════
