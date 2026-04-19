@@ -77,20 +77,29 @@ KILL ZONES (UTC+2) : London 10h-12h | NY 15h30-17h30 | Dead Zone 12h-15h30 | Pre
 === LÉGENDE GRAPHIQUE EXACTE (NE JAMAIS INVENTER) ===
 
 OB (Order Blocks) — rectangles avec CONTOUR coloré :
+- Contour ROUGE fin = OB M1 → ultra-précis, entrée affinée
 - Contour MAUVE = OB M5 → déclencheur primaire obligatoire
 - Contour VERT = OB M30 → confluence bonus
-- Contour GRIS = OB H1
-- Contour NOIR = OB H4 → institutionnel
-- NE PAS mentionner M1, M15, M45 — trop d'erreurs
+- Contour GRIS = OB H1 → support/résistance majeur
+- Contour NOIR = OB H4 → institutionnel, confluence forte
+
+OB IMBRIQUÉS (priorité maximale) :
+- OB M1 ROUGE à l'intérieur d'un OB M5 MAUVE → signal MAXIMUM, mentionner obligatoirement
+- OB M5 MAUVE à l'intérieur d'un OB M30 VERT → confluence très forte
+- OB M30 VERT à l'intérieur d'un OB H1 GRIS → zone institutionnelle
+- OB H1 GRIS à l'intérieur d'un OB H4 NOIR → confluence institutionnelle maximale
+- Toute combinaison d'OB imbriqués = bonus de confluence, toujours mentionner
+- NE PAS mentionner M15, M45 — non utilisés
 
 FVG (Fair Value Gaps) — rectangles PLEINS :
 - Rectangle entièrement BLEU = FVG haussier
 - Rectangle entièrement ROUGE = FVG baissier
 
 LIQUIDITÉS :
-- Lignes NOIRES horizontales avec $$$ = niveaux de liquidité
-- Lignes BLEUES avec €€€ = trendline haussière
-- Lignes ORANGES avec €€€ = trendline baissière
+- Lignes NOIRES horizontales avec $$$ = niveaux de liquidité (lire valeur exacte à droite)
+- Lignes BLEUES DIAGONALES avec €€€ = trendline haussière (slope montante)
+- Lignes ORANGES DIAGONALES avec €€€ = trendline baissière (slope descendante)
+- Ces trendlines sont souvent visibles même à gauche du chart — bien les identifier
 
 ASIAN SESSION :
 - Grand rectangle GRIS FONCÉ / NOIR = session asiatique
@@ -98,7 +107,9 @@ ASIAN SESSION :
 - Bas du rectangle = support / liquidité basse
 
 POC :
-- Ligne fine JAUNE continue horizontale = Point of Control
+- Ligne fine JAUNE continue horizontale qui traverse TOUT le chart de gauche à droite = Point of Control
+- Ne pas confondre avec d'autres lignes — le POC est TOUJOURS la ligne jaune la plus longue et continue
+- Lire le niveau exact affiché à droite
 
 ChoCH :
 - Ligne discontinue ORANGE + texte "ChoCH" orange = ChoCH baissier
@@ -111,9 +122,13 @@ SETUP DE TRADE (si visible sur le chart) :
 - Rectangle BLEU CYAN plein = zone de TP (profit)
 - Rectangle ORANGE plein = zone de SL (perte)
 - Ligne ROUGE horizontale = point d'entrée
+→ IMPORTANT : lire les valeurs numériques EXACTES affichées à droite du chart (prix exacts en rouge=entrée, orange=SL, cyan=TP)
 → Si entrée < TP = LONG | Si entrée > TP = SHORT
 → Calculer RR = distance(entrée→TP) / distance(entrée→SL)
 → Valider ou invalider le setup selon les règles SMC
+
+OB IMBRIQUÉ (OTE-within-OB) :
+- Si un OB M1 (contour gris très fin) est visible À L'INTÉRIEUR d'un OB M5 (contour mauve) = signal MAXIMUM priorité → mentionner obligatoirement
 
 LIQUIDITY SWEEP : détecter toi-même les sweeps (dépassement bref d'un niveau $$$ puis retour)
 
@@ -131,7 +146,9 @@ Pénalités : SafeHaven-15, AnnonceProche-10, MacroOppose-10, ZoneEpuisee2x-15
 SEUILS : <41 SKIP | 41-70 demi-taille | 71-120 normal | 120-170 fort | 170+ parfait
 
 FORMAT TELEGRAM (mobile, concis, max 20 lignes) :
-Biais → OB (contour+TF) → FVG → ChoCH → Liquidités → POC → OTE → Setup visible → Score /215 → GO/SKIP → Entrée/SL/TP/RR → Confiance /10
+Biais → OB (contour+TF) → FVG → ChoCH → Liquidités $$$ → Trendlines €€€ → POC (jaune) → OTE → OB imbriqué → Setup (Entrée/SL/TP exacts/RR) → Score /215 → GO/SKIP → Confiance /10
+
+CORRÉLATIONS : utiliser les données du tableau visible sur le chart (KZ, RÉGIME, XAU/USD%, EUR/USD%, DXY%, S&P500%) pour enrichir l'analyse macro et ajuster le scoring.
 STRICT : ne pas gonfler le score. Si pas de setup = SKIP clair."""
 
 # ══════════════════════════════════════════════════════
@@ -1022,11 +1039,23 @@ async def handle_photo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     )
     async with aiohttp.ClientSession() as s:
         result = await analyse_chart(s, b64, ctx_str)
-    # Strip markdown and send without parse_mode to avoid HTML errors
-    result_clean = result.replace("**", "").replace("__", "")
-    await update.message.reply_text(
-        f"📊 ANALYSE SMC\n\n{result_clean}"
-    )
+    import re as _re
+    # Convert markdown to HTML
+    result_html = result
+    result_html = _re.sub(r'\*\*(.+?)\*\*', r'<b></b>', result_html)
+    result_html = _re.sub(r'__(.+?)__', r'<b></b>', result_html)
+    result_html = _re.sub(r'#+\s*(.+)', r'<b></b>', result_html)
+    # Remove any remaining problematic tags
+    result_html = _re.sub(r'<(?!b>|/b>|i>|/i>|code>|/code>)[^>]+>', '', result_html)
+    try:
+        await update.message.reply_text(
+            f"📊 <b>ANALYSE SMC</b>\n\n{result_html}",
+            parse_mode=ParseMode.HTML
+        )
+    except Exception:
+        # Fallback without HTML if still fails
+        result_clean = result.replace("**", "").replace("__", "").replace("#", "")
+        await update.message.reply_text(f"📊 ANALYSE SMC\n\n{result_clean}")
 
 # ══════════════════════════════════════════════════════
 # BOUCLE PRINCIPALE
